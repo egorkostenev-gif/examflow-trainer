@@ -68,10 +68,11 @@
             align-items: center; 
         }
         
+        /* === БЕЙДЖ ПРОГРЕССА (исправленный) === */
         .progress-badge {
-            display: flex;
+            display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             font-size: 14px;
             font-weight: 700;
             color: #555;
@@ -79,6 +80,7 @@
             padding: 7px 12px;
             border-radius: 999px;
             transition: background 0.2s;
+            line-height: 1;
         }
         
         .progress-badge.limit-warning {
@@ -89,6 +91,18 @@
         .progress-badge .checkmark {
             color: #2f855a;
             font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            line-height: 1;
+        }
+        
+        .progress-badge .checkmark::before {
+            content: '✓';
+            font-size: 13px;
+            position: relative;
+            top: -1px;
+            display: inline-block;
         }
         
         .image-zone { 
@@ -355,7 +369,7 @@
             <span>Задание <span id="task-num-display">№15</span></span>
             <div class="progress-badge" id="progress-badge">
                 <span id="progress-text">0 / 5</span>
-                <span class="checkmark">✓<span id="score">0</span></span>
+                <span class="checkmark"><span id="score">0</span></span>
             </div>
         </div>
         
