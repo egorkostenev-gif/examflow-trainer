@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>ОГЭ Тренажер</title>
+    <style>
+        :root { 
+            --accent: #000; 
+            --bg: #ffffff; 
+            --gray: #f8f9fa;
+        }
+        
+        #tildacopy, .t-tildalabel { display: none !important; }
+
+        .trainer-wrapper { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--gray); 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            padding: 20px; 
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .app-container { 
+            background: var(--bg); 
+            width: 100%; 
+            max-width: 650px; 
+            border-radius: 24px; 
+            padding: 35px; 
+            box-shadow: 0 4px 30px rgba(0,0,0,0.03); 
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #loader {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            transition: opacity 0.3s;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #000;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 10px;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .header { display: flex; justify-content: space-between; margin-bottom: 25px; font-weight: 800; font-size: 20px; align-items: center; }
+        
+        /* Селектор номера задачи — выглядит как обычный текст */
+        #task-selector {
+            border: none;
+            background: transparent;
+            font: inherit;
+            font-weight: 800;
+            color: inherit;
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 6px;
+            outline: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        #task-selector:hover {
+            background: #f0f0f0;
+        }
+        
+        .image-zone { width: 100%; height: 240px; background: #fff; display: flex; justify-content: center; align-items: center; margin-bottom: 20px; border: 1px solid #eee; border-radius: 12px; }
+        svg { width: 100%; max-width: 380px; height: 100%; }
+        .task-text { font-size: 18px; line-height: 1.6; color: #1a1a1a; margin-bottom: 25px; min-height: 90px; }
+        
+        input { width: 100%; padding: 18px; border: 2px solid #eee; border-radius: 14px; font-size: 18px; box-sizing: border-box; margin-bottom: 15px; outline: none; transition: 0.2s; }
+        input:focus { border-color: #000; }
+        input:disabled { background: #f9f9f9; cursor: not-allowed; }
+
+        .btn-row { display: grid; grid-template-columns: 2fr 2fr 0.7fr; gap: 12px; }
+        button { padding: 16px; border-radius: 14px; border: none; font-size: 16px; font-weight: 700; cursor: pointer; background: #000; color: #fff; transition: 0.3s; }
+        button:disabled { background: #ccc; cursor: not-allowed; transform: scale(1) !important; }
+        button:active { transform: scale(0.98); }
+        
+        .result-box { margin-top: 20px; padding: 20px; border-radius: 16px; display: none; line-height: 1.6; border: 1px solid transparent; animation: fadeIn 0.4s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .success { background: #f0fff4; color: #2f855a; border-color: #c6f6d5; }
+        .error { background: #fff5f5; color: #c53030; border-color: #feb2b2; }
+        .explanation { margin-top: 10px; font-size: 15px; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 10px; }
+        
+        @media (max-width: 480px) {
+            .app-container { padding: 20px; }
+            .btn-row { grid-template-columns: 1fr 1fr 0.5fr; gap: 8px; }
+            button { padding: 12px; font-size: 14px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="trainer-wrapper">
+    <div class="app-container">
+        <div id="loader">
+            <div class="spinner"></div>
+            <div style="font-weight: 600; color: #888;">Загрузка задачи...</div>
+        </div>
+
+        <div class="header">
+            <span>
+                Задание №<select id="task-selector" onchange="loadTaskNumber(this.value)">
+                    <!-- Опции добавятся через JS -->
+                </select>
+            </span>
+            <span style="color: #888;">Верно: <span id="score">0</span></span>
+        </div>
+        <div class="image-zone"><svg id="svg-canvas" viewBox="0 0 400 220"></svg></div>
+        <div id="task-text" class="task-text"></div>
+        <input type="text" id="ans-input" placeholder="Введите ответ" autocomplete="off">
+        <div class="btn-row">
+            <button id="btn-gen" onclick="generateTask()">Новая задача</button>
+            <button id="btn-check" onclick="checkAnswer()">Проверить</button>
+            <button onclick="resetScore()">↺</button>
+        </div>
+        <div id="result" class="result-box"></div>
+    </div>
+</div>
+
+<script>
+// ============================================
+// КОНФИГ — какие задачи доступны
+// ============================================
+// Добавь сюда номер, когда создашь новый файл tasks/zadacha-N.js
+const AVAILABLE_TASKS = [15];  // потом: [6, 7, 8, ..., 25]
+
+
+// ============================================
+// ОСНОВНАЯ ЛОГИКА
+// ============================================
+let score = 0; 
+let current = null;
+let currentTaskNumber = null;
+
+// Заполняем селектор номера задачи
+function initSelector() {
+    const sel = document.getElementById('task-selector');
+    AVAILABLE_TASKS.forEach(num => {
+        const opt = document.createElement('option');
+        opt.value = num;
+        opt.textContent = num;
+        sel.appendChild(opt);
+    });
+}
+
+// Загружаем файл с задачами выбранного номера
+function loadTaskNumber(num) {
+    currentTaskNumber = num;
+    window.TASKS = [];
+    
+    // удаляем старый скрипт задачи, если был
+    const oldScript = document.getElementById('current-task-script');
+    if (oldScript) oldScript.remove();
+    
+    // загружаем новый
+    const script = document.createElement('script');
+    script.id = 'current-task-script';
+    script.src = `tasks/zadacha-${num}.js`;
+    script.onload = () => {
+        // сбрасываем счёт при смене задачи
+        score = 0;
+        document.getElementById('score').innerText = score;
+        generateTask();
+    };
+    script.onerror = () => {
+        alert(`Файл tasks/zadacha-${num}.js не найден`);
+    };
+    document.head.appendChild(script);
+}
+
+// Универсальная отрисовка SVG
+function draw(drawFn) {
+    const svg = document.getElementById('svg-canvas'); 
+    svg.innerHTML = '';
+    const ns = "http://www.w3.org/2000/svg";
+    
+    const L = (x1,y1,x2,y2, dash=false) => {
+        const l = document.createElementNS(ns, "line");
+        l.setAttribute("x1", x1); l.setAttribute("y1", y1);
+        l.setAttribute("x2", x2); l.setAttribute("y2", y2);
+        l.setAttribute("stroke", "#000"); l.setAttribute("stroke-width", "2");
+        if(dash) l.setAttribute("stroke-dasharray", "4"); 
+        svg.appendChild(l);
+    };
+    
+    const T = (x,y,txt) => {
+        const t = document.createElementNS(ns, "text");
+        t.setAttribute("x", x); t.setAttribute("y", y);
+        t.setAttribute("font-size", "16"); 
+        t.setAttribute("font-weight", "bold");
+        t.textContent = txt; 
+        svg.appendChild(t);
+    };
+    
+    drawFn(svg, L, T);
+}
+
+async function generateTask() {
+    const loader = document.getElementById('loader');
+    const btnCheck = document.getElementById('btn-check');
+    const input = document.getElementById('ans-input');
+    const res = document.getElementById('result');
+
+    loader.style.display = 'flex';
+    loader.style.opacity = '1';
+    res.style.display = 'none';
+    input.disabled = false;
+    input.value = '';
+
+    const delay = Math.floor(Math.random() * 500) + 1500;
+    await new Promise(resolve => setTimeout(resolve, delay));
+
+    // Случайный тип из загруженных
+    const taskType = window.TASKS[Math.floor(Math.random() * window.TASKS.length)];
+    current = taskType.engine();
+    current._drawFn = taskType.draw;
+    
+    document.getElementById('task-text').innerText = current.txt;
+    draw(current._drawFn);
+
+    loader.style.opacity = '0';
+    setTimeout(() => { loader.style.display = 'none'; }, 300);
+    
+    btnCheck.disabled = false;
+}
+
+function checkAnswer() {
+    const input = document.getElementById('ans-input');
+    const btnCheck = document.getElementById('btn-check');
+    const val = input.value.trim().replace(',','.');
+    const res = document.getElementById('result');
+    
+    if (val === "") return;
+
+    res.style.display = 'block';
+    btnCheck.disabled = true;
+    input.disabled = true;
+
+    if(parseFloat(val) === current.ans) {
+        res.className = 'result-box success'; 
+        res.innerHTML = `<b>Верно!</b>`;
+        score++; 
+        document.getElementById('score').innerText = score;
+    } else {
+        res.className = 'result-box error'; 
+        res.innerHTML = `<b>Ошибка.</b><div class="explanation"><b>Решение:</b><br>${current.solve}</div>`;
+    }
+}
+
+function resetScore() { 
+    score = 0; 
+    document.getElementById('score').innerText = score; 
+    generateTask(); 
+}
+
+// ============================================
+// СТАРТ
+// ============================================
+window.onload = () => {
+    initSelector();
+    // Можно открывать с параметром в URL: ?task=15
+    const urlParams = new URLSearchParams(window.location.search);
+    const startTask = urlParams.get('task') || AVAILABLE_TASKS[0];
+    document.getElementById('task-selector').value = startTask;
+    loadTaskNumber(startTask);
+};
+</script>
+</body>
+</html>
