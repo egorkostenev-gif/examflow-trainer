@@ -59,51 +59,303 @@
 
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        .header { display: flex; justify-content: space-between; margin-bottom: 25px; font-weight: 800; font-size: 20px; align-items: center; }
+        /* === ШАПКА === */
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            margin-bottom: 25px; 
+            font-weight: 800; 
+            font-size: 20px; 
+            align-items: center; 
+        }
         
-        /* Селектор номера задачи — выглядит как обычный текст */
-        #task-selector {
-            border: none;
-            background: transparent;
-            font: inherit;
+        .progress-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            color: #555;
+            background: #f3f4f6;
+            padding: 7px 12px;
+            border-radius: 999px;
+            transition: background 0.2s;
+        }
+        
+        .progress-badge.limit-warning {
+            background: #fff5f5;
+            color: #c53030;
+        }
+        
+        .progress-badge .checkmark {
+            color: #2f855a;
             font-weight: 800;
-            color: inherit;
-            cursor: pointer;
-            padding: 2px 4px;
-            border-radius: 6px;
-            outline: none;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-        }
-        #task-selector:hover {
-            background: #f0f0f0;
         }
         
-        .image-zone { width: 100%; height: 240px; background: #fff; display: flex; justify-content: center; align-items: center; margin-bottom: 20px; border: 1px solid #eee; border-radius: 12px; }
+        /* === КАРТИНКА === */
+        .image-zone { 
+            width: 100%; 
+            height: 240px; 
+            background: #fff; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            margin-bottom: 20px; 
+            border: 1px solid #eee; 
+            border-radius: 12px; 
+        }
         svg { width: 100%; max-width: 380px; height: 100%; }
-        .task-text { font-size: 18px; line-height: 1.6; color: #1a1a1a; margin-bottom: 25px; min-height: 90px; }
         
-        input { width: 100%; padding: 18px; border: 2px solid #eee; border-radius: 14px; font-size: 18px; box-sizing: border-box; margin-bottom: 15px; outline: none; transition: 0.2s; }
+        .task-text { 
+            font-size: 18px; 
+            line-height: 1.6; 
+            color: #1a1a1a; 
+            margin-bottom: 25px; 
+            min-height: 90px; 
+        }
+        
+        /* === ВВОД === */
+        input { 
+            width: 100%; 
+            padding: 18px; 
+            border: 2px solid #eee; 
+            border-radius: 14px; 
+            font-size: 18px; 
+            box-sizing: border-box; 
+            margin-bottom: 15px; 
+            outline: none; 
+            transition: 0.2s; 
+        }
         input:focus { border-color: #000; }
         input:disabled { background: #f9f9f9; cursor: not-allowed; }
 
-        .btn-row { display: grid; grid-template-columns: 2fr 2fr 0.7fr; gap: 12px; }
-        button { padding: 16px; border-radius: 14px; border: none; font-size: 16px; font-weight: 700; cursor: pointer; background: #000; color: #fff; transition: 0.3s; }
-        button:disabled { background: #ccc; cursor: not-allowed; transform: scale(1) !important; }
+        /* === КНОПКИ === */
+        .btn-row { 
+            display: grid; 
+            grid-template-columns: 2fr 2fr 0.7fr; 
+            gap: 12px; 
+        }
+        button { 
+            padding: 16px; 
+            border-radius: 14px; 
+            border: none; 
+            font-size: 16px; 
+            font-weight: 700; 
+            cursor: pointer; 
+            background: #000; 
+            color: #fff; 
+            transition: 0.3s; 
+        }
+        button:disabled { 
+            background: #ccc; 
+            cursor: not-allowed; 
+            transform: scale(1) !important; 
+        }
         button:active { transform: scale(0.98); }
         
-        .result-box { margin-top: 20px; padding: 20px; border-radius: 16px; display: none; line-height: 1.6; border: 1px solid transparent; animation: fadeIn 0.4s; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* === СЕЛЕКТОР ЗАДАЧИ (левая кнопка) === */
+        .selector-wrapper {
+            position: relative;
+        }
+        
+        .task-select-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+        }
+        
+        .task-select-btn .arrow {
+            font-size: 10px;
+            opacity: 0.7;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: inline-block;
+        }
+        
+        .task-select-btn.is-open .arrow {
+            transform: rotate(180deg);
+            opacity: 1;
+        }
+        
+        /* === ВЫПАДАЮЩЕЕ МЕНЮ === */
+        .task-dropdown {
+            position: absolute;
+            bottom: calc(100% + 10px);
+            left: 0;
+            min-width: 280px;
+            background: #fff;
+            border: 1px solid #eee;
+            border-radius: 20px;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.16), 0 4px 12px rgba(0,0,0,0.04);
+            padding: 10px;
+            opacity: 0;
+            transform: translateY(10px) scale(0.95);
+            pointer-events: none;
+            transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 50;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .task-dropdown.is-open {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+        }
+        
+        .dropdown-title {
+            padding: 12px 14px 8px;
+            font-size: 11px;
+            font-weight: 800;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        
+        .dropdown-divider {
+            height: 1px;
+            background: #f0f0f0;
+            margin: 4px 8px 8px;
+        }
+        
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: background 0.18s ease, transform 0.1s ease;
+            user-select: none;
+            position: relative;
+            opacity: 0;
+            transform: translateY(6px);
+            animation: itemAppear 0.3s ease forwards;
+        }
+        
+        @keyframes itemAppear {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .dropdown-item:hover {
+            background: #f5f5f7;
+        }
+        
+        .dropdown-item:active {
+            transform: scale(0.98);
+        }
+        
+        .dropdown-item.is-active {
+            background: linear-gradient(135deg, #000 0%, #2a2a2a 100%);
+            color: #fff;
+        }
+        
+        .dropdown-item.is-active::before {
+            content: '';
+            position: absolute;
+            left: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 24px;
+            background: #fff;
+            border-radius: 2px;
+        }
+        
+        .dropdown-item .item-num {
+            font-weight: 800;
+            font-size: 18px;
+            min-width: 50px;
+            letter-spacing: -0.02em;
+        }
+        
+        .dropdown-item .item-label {
+            color: #555;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .dropdown-item.is-active .item-label {
+            color: rgba(255,255,255,0.75);
+        }
+        
+        .dropdown-empty {
+            padding: 24px 16px;
+            text-align: center;
+            color: #aaa;
+            font-size: 14px;
+        }
+        
+        /* === РЕЗУЛЬТАТ === */
+        .result-box { 
+            margin-top: 20px; 
+            padding: 20px; 
+            border-radius: 16px; 
+            display: none; 
+            line-height: 1.6; 
+            border: 1px solid transparent; 
+            animation: fadeIn 0.4s; 
+        }
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(10px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
         
         .success { background: #f0fff4; color: #2f855a; border-color: #c6f6d5; }
         .error { background: #fff5f5; color: #c53030; border-color: #feb2b2; }
-        .explanation { margin-top: 10px; font-size: 15px; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 10px; }
+        .explanation { 
+            margin-top: 10px; 
+            font-size: 15px; 
+            border-top: 1px solid rgba(0,0,0,0.05); 
+            padding-top: 10px; 
+        }
+        
+        /* === ЭКРАН ЛИМИТА === */
+        .limit-screen {
+            text-align: center;
+            padding: 20px;
+            max-width: 360px;
+        }
+        .limit-screen .icon {
+            font-size: 56px;
+            margin-bottom: 20px;
+        }
+        .limit-screen .title {
+            font-weight: 800;
+            font-size: 22px;
+            margin-bottom: 12px;
+            color: #1a1a1a;
+        }
+        .limit-screen .subtitle {
+            color: #888;
+            font-size: 15px;
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+        .limit-screen .cta {
+            display: inline-block;
+            padding: 14px 28px;
+            background: #000;
+            color: #fff;
+            border-radius: 14px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 15px;
+            transition: transform 0.2s;
+        }
+        .limit-screen .cta:active {
+            transform: scale(0.97);
+        }
         
         @media (max-width: 480px) {
             .app-container { padding: 20px; }
             .btn-row { grid-template-columns: 1fr 1fr 0.5fr; gap: 8px; }
             button { padding: 12px; font-size: 14px; }
+            .task-dropdown { min-width: 240px; }
+            .header { font-size: 17px; }
+            .progress-badge { font-size: 12px; padding: 6px 10px; }
         }
     </style>
 </head>
@@ -117,66 +369,227 @@
         </div>
 
         <div class="header">
-            <span>
-                Задание №<select id="task-selector" onchange="loadTaskNumber(this.value)">
-                    <!-- Опции добавятся через JS -->
-                </select>
-            </span>
-            <span style="color: #888;">Верно: <span id="score">0</span></span>
+            <span>Задание <span id="task-num-display">№15</span></span>
+            <div class="progress-badge" id="progress-badge">
+                <span id="progress-text">0 / 5</span>
+                <span class="checkmark">✓<span id="score">0</span></span>
+            </div>
         </div>
+        
         <div class="image-zone"><svg id="svg-canvas" viewBox="0 0 400 220"></svg></div>
         <div id="task-text" class="task-text"></div>
         <input type="text" id="ans-input" placeholder="Введите ответ" autocomplete="off">
+        
         <div class="btn-row">
-            <button id="btn-gen" onclick="generateTask()">Новая задача</button>
+            <div class="selector-wrapper">
+                <button class="task-select-btn" id="btn-selector" onclick="toggleDropdown(event)">
+                    <span id="btn-task-num">№15</span>
+                    <span class="arrow">▼</span>
+                </button>
+                <div id="task-dropdown" class="task-dropdown"></div>
+            </div>
             <button id="btn-check" onclick="checkAnswer()">Проверить</button>
-            <button onclick="resetScore()">↺</button>
+            <button onclick="generateTask()" title="Новая задача">↺</button>
         </div>
+        
         <div id="result" class="result-box"></div>
     </div>
 </div>
 
 <script>
 // ============================================
-// КОНФИГ — какие задачи доступны
+// КОНФИГ
 // ============================================
-// Добавь сюда номер, когда создашь новый файл tasks/zadacha-N.js
-const AVAILABLE_TASKS = [15];  // потом: [6, 7, 8, ..., 25]
+const DAILY_LIMIT = 5;  // лимит задач в день (бесплатная версия)
+
+// Какие задачи доступны (соответствуют файлам tasks/zadacha-N.js)
+const AVAILABLE_TASKS = [15];
+
+// Названия тем для красивого отображения
+const TASK_LABELS = {
+    15: 'Геометрия',
+    // 16: 'Углы окружности',
+    // 17: 'Площади',
+};
+
+// Ссылка для CTA на экране лимита (вставь свой TG-канал)
+const TG_LINK = 'https://t.me/'; // ← поменяй на свой канал
 
 
 // ============================================
-// ОСНОВНАЯ ЛОГИКА
+// СОСТОЯНИЕ
 // ============================================
 let score = 0; 
 let current = null;
 let currentTaskNumber = null;
 
-// Заполняем селектор номера задачи
-function initSelector() {
-    const sel = document.getElementById('task-selector');
-    AVAILABLE_TASKS.forEach(num => {
-        const opt = document.createElement('option');
-        opt.value = num;
-        opt.textContent = num;
-        sel.appendChild(opt);
+
+// ============================================
+// ЛИМИТ ЗАДАЧ В ДЕНЬ
+// ============================================
+
+function getTodayKey() {
+    const d = new Date();
+    return `examflow_attempts_${d.getFullYear()}_${d.getMonth()}_${d.getDate()}`;
+}
+
+function getAttemptsToday() {
+    return parseInt(localStorage.getItem(getTodayKey()) || '0');
+}
+
+function incrementAttempts() {
+    const key = getTodayKey();
+    localStorage.setItem(key, getAttemptsToday() + 1);
+    updateProgressDisplay();
+}
+
+function isLimitReached() {
+    return getAttemptsToday() >= DAILY_LIMIT;
+}
+
+function updateProgressDisplay() {
+    const attempts = getAttemptsToday();
+    document.getElementById('progress-text').textContent = `${attempts} / ${DAILY_LIMIT}`;
+    
+    const badge = document.getElementById('progress-badge');
+    if (attempts >= DAILY_LIMIT) {
+        badge.classList.add('limit-warning');
+    } else {
+        badge.classList.remove('limit-warning');
+    }
+}
+
+function showLimitScreen() {
+    const loader = document.getElementById('loader');
+    loader.innerHTML = `
+        <div class="limit-screen">
+            <div class="icon">🎯</div>
+            <div class="title">Лимит на сегодня</div>
+            <div class="subtitle">
+                Ты решил 5 задач — это бесплатный дневной лимит.<br>
+                Возвращайся завтра за новой порцией.
+            </div>
+            <a href="${TG_LINK}" class="cta" target="_blank">Подписаться на канал</a>
+        </div>
+    `;
+    loader.style.display = 'flex';
+    loader.style.opacity = '1';
+    
+    // Блокируем кнопки
+    document.getElementById('btn-check').disabled = true;
+    document.getElementById('ans-input').disabled = true;
+}
+
+
+// ============================================
+// СЕЛЕКТОР ЗАДАЧ
+// ============================================
+
+function initDropdown() {
+    const dropdown = document.getElementById('task-dropdown');
+    dropdown.innerHTML = '';
+    
+    const title = document.createElement('div');
+    title.className = 'dropdown-title';
+    title.textContent = 'Выбери задание';
+    dropdown.appendChild(title);
+    
+    const divider = document.createElement('div');
+    divider.className = 'dropdown-divider';
+    dropdown.appendChild(divider);
+    
+    if (AVAILABLE_TASKS.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'dropdown-empty';
+        empty.textContent = 'Нет доступных заданий';
+        dropdown.appendChild(empty);
+        return;
+    }
+    
+    AVAILABLE_TASKS.forEach((num, idx) => {
+        const label = TASK_LABELS[num] || '';
+        const item = document.createElement('div');
+        item.className = 'dropdown-item';
+        item.dataset.taskNum = num;
+        item.style.animationDelay = `${idx * 0.04}s`;
+        item.innerHTML = `
+            <span class="item-num">№${num}</span>
+            <span class="item-label">${label}</span>
+        `;
+        item.onclick = (e) => {
+            e.stopPropagation();
+            selectTask(num);
+        };
+        dropdown.appendChild(item);
     });
 }
 
-// Загружаем файл с задачами выбранного номера
+function toggleDropdown(event) {
+    if (event) event.stopPropagation();
+    const dropdown = document.getElementById('task-dropdown');
+    const btn = document.getElementById('btn-selector');
+    
+    const isOpening = !dropdown.classList.contains('is-open');
+    dropdown.classList.toggle('is-open');
+    btn.classList.toggle('is-open');
+    
+    if (isOpening) {
+        // перезапускаем анимацию появления пунктов
+        document.querySelectorAll('.dropdown-item').forEach((item, idx) => {
+            item.style.animation = 'none';
+            void item.offsetWidth; // force reflow
+            item.style.animation = '';
+            item.style.animationDelay = `${idx * 0.04}s`;
+        });
+        updateActiveItem();
+    }
+}
+
+function closeDropdown() {
+    document.getElementById('task-dropdown').classList.remove('is-open');
+    document.getElementById('btn-selector').classList.remove('is-open');
+}
+
+function updateActiveItem() {
+    document.querySelectorAll('.dropdown-item').forEach(item => {
+        if (parseInt(item.dataset.taskNum) === currentTaskNumber) {
+            item.classList.add('is-active');
+        } else {
+            item.classList.remove('is-active');
+        }
+    });
+}
+
+function selectTask(num) {
+    closeDropdown();
+    document.getElementById('btn-task-num').textContent = `№${num}`;
+    document.getElementById('task-num-display').textContent = `№${num}`;
+    loadTaskNumber(num);
+}
+
+// Закрытие при клике вне меню
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.selector-wrapper')) {
+        closeDropdown();
+    }
+});
+
+
+// ============================================
+// ЗАГРУЗКА ФАЙЛОВ ЗАДАЧ
+// ============================================
+
 function loadTaskNumber(num) {
-    currentTaskNumber = num;
+    currentTaskNumber = parseInt(num);
     window.TASKS = [];
     
-    // удаляем старый скрипт задачи, если был
     const oldScript = document.getElementById('current-task-script');
     if (oldScript) oldScript.remove();
     
-    // загружаем новый
     const script = document.createElement('script');
     script.id = 'current-task-script';
     script.src = `tasks/zadacha-${num}.js`;
     script.onload = () => {
-        // сбрасываем счёт при смене задачи
         score = 0;
         document.getElementById('score').innerText = score;
         generateTask();
@@ -187,7 +600,11 @@ function loadTaskNumber(num) {
     document.head.appendChild(script);
 }
 
-// Универсальная отрисовка SVG
+
+// ============================================
+// ОТРИСОВКА SVG
+// ============================================
+
 function draw(drawFn) {
     const svg = document.getElementById('svg-canvas'); 
     svg.innerHTML = '';
@@ -214,12 +631,28 @@ function draw(drawFn) {
     drawFn(svg, L, T);
 }
 
+
+// ============================================
+// ГЕНЕРАЦИЯ ЗАДАЧИ
+// ============================================
+
 async function generateTask() {
+    // Проверяем лимит
+    if (isLimitReached()) {
+        showLimitScreen();
+        return;
+    }
+    
     const loader = document.getElementById('loader');
     const btnCheck = document.getElementById('btn-check');
     const input = document.getElementById('ans-input');
     const res = document.getElementById('result');
 
+    // Возвращаем нормальный лоадер (на случай если был показан экран лимита)
+    loader.innerHTML = `
+        <div class="spinner"></div>
+        <div style="font-weight: 600; color: #888;">Загрузка задачи...</div>
+    `;
     loader.style.display = 'flex';
     loader.style.opacity = '1';
     res.style.display = 'none';
@@ -229,7 +662,6 @@ async function generateTask() {
     const delay = Math.floor(Math.random() * 500) + 1500;
     await new Promise(resolve => setTimeout(resolve, delay));
 
-    // Случайный тип из загруженных
     const taskType = window.TASKS[Math.floor(Math.random() * window.TASKS.length)];
     current = taskType.engine();
     current._drawFn = taskType.draw;
@@ -243,6 +675,11 @@ async function generateTask() {
     btnCheck.disabled = false;
 }
 
+
+// ============================================
+// ПРОВЕРКА ОТВЕТА
+// ============================================
+
 function checkAnswer() {
     const input = document.getElementById('ans-input');
     const btnCheck = document.getElementById('btn-check');
@@ -254,6 +691,9 @@ function checkAnswer() {
     res.style.display = 'block';
     btnCheck.disabled = true;
     input.disabled = true;
+    
+    // Засчитываем попытку (вне зависимости от правильности)
+    incrementAttempts();
 
     if(parseFloat(val) === current.ans) {
         res.className = 'result-box success'; 
@@ -266,21 +706,19 @@ function checkAnswer() {
     }
 }
 
-function resetScore() { 
-    score = 0; 
-    document.getElementById('score').innerText = score; 
-    generateTask(); 
-}
 
 // ============================================
 // СТАРТ
 // ============================================
 window.onload = () => {
-    initSelector();
-    // Можно открывать с параметром в URL: ?task=15
+    initDropdown();
+    updateProgressDisplay();
+    
     const urlParams = new URLSearchParams(window.location.search);
     const startTask = urlParams.get('task') || AVAILABLE_TASKS[0];
-    document.getElementById('task-selector').value = startTask;
+    
+    document.getElementById('btn-task-num').textContent = `№${startTask}`;
+    document.getElementById('task-num-display').textContent = `№${startTask}`;
     loadTaskNumber(startTask);
 };
 </script>
