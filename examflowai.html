@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>ОГЭ Тренажер</title>
+    <style>
+        :root { 
+            --accent: #000; 
+            --bg: #ffffff; 
+            --gray: #f8f9fa;
+        }
+        
+        #tildacopy, .t-tildalabel { display: none !important; }
+
+        .trainer-wrapper { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--gray); 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            padding: 20px; 
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .app-container { 
+            background: var(--bg); 
+            width: 100%; 
+            max-width: 650px; 
+            border-radius: 24px; 
+            padding: 35px; 
+            box-shadow: 0 4px 30px rgba(0,0,0,0.03); 
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #loader {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            transition: opacity 0.3s;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #000;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 10px;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            margin-bottom: 25px; 
+            font-weight: 800; 
+            font-size: 20px; 
+            align-items: center; 
+        }
+        
+        /* === БЕЙДЖ ПРОГРЕССА (исправленный) === */
+        .progress-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: 700;
+            color: #555;
+            background: #f3f4f6;
+            padding: 7px 12px;
+            border-radius: 999px;
+            transition: background 0.2s;
+            line-height: 1;
+        }
+        
+        .progress-badge.limit-warning {
+            background: #fff5f5;
+            color: #c53030;
+        }
+        
+        .progress-badge .checkmark {
+            color: #2f855a;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            line-height: 1;
+        }
+        
+        .progress-badge .checkmark::before {
+            content: '✓';
+            font-size: 13px;
+            position: relative;
+            top: -1px;
+            display: inline-block;
+        }
+        
+        .image-zone { 
+            width: 100%; 
+            height: 240px; 
+            background: #fff; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            margin-bottom: 20px; 
+            border: 1px solid #eee; 
+            border-radius: 12px; 
+        }
+        svg { width: 100%; max-width: 380px; height: 100%; }
+        
+        .task-text { 
+            font-size: 18px; 
+            line-height: 1.6; 
+            color: #1a1a1a; 
+            margin-bottom: 25px; 
+            min-height: 90px; 
+        }
+        
+        input { 
+            width: 100%; 
+            padding: 18px; 
+            border: 2px solid #eee; 
+            border-radius: 14px; 
+            font-size: 18px; 
+            box-sizing: border-box; 
+            margin-bottom: 15px; 
+            outline: none; 
+            transition: 0.2s; 
+        }
+        input:focus { border-color: #000; }
+        input:disabled { background: #f9f9f9; cursor: not-allowed; }
+
+        .btn-row { 
+            display: grid; 
+            grid-template-columns: 2fr 2fr 1fr; 
+            gap: 12px; 
+        }
+        button { 
+            padding: 16px; 
+            border-radius: 14px; 
+            border: none; 
+            font-size: 16px; 
+            font-weight: 700; 
+            cursor: pointer; 
+            background: #000; 
+            color: #fff; 
+            transition: 0.3s; 
+        }
+        button:disabled { 
+            background: #ccc; 
+            cursor: not-allowed; 
+            transform: scale(1) !important; 
+        }
+        button:active { transform: scale(0.98); }
+        
+        .selector-wrapper {
+            position: relative;
+        }
+        
+        .task-select-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 16px 8px;
+        }
+        
+        .task-select-btn .arrow {
+            font-size: 9px;
+            opacity: 0.7;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: inline-block;
+        }
+        
+        .task-select-btn.is-open .arrow {
+            transform: rotate(180deg);
+            opacity: 1;
+        }
+        
+        .task-dropdown {
+            position: absolute;
+            bottom: calc(100% + 10px);
+            right: 0;
+            min-width: 280px;
+            background: #fff;
+            border: 1px solid #eee;
+            border-radius: 20px;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.16), 0 4px 12px rgba(0,0,0,0.04);
+            padding: 10px;
+            opacity: 0;
+            transform: translateY(10px) scale(0.95);
+            pointer-events: none;
+            transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 50;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .task-dropdown.is-open {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+        }
+        
+        .dropdown-title {
+            padding: 12px 14px 8px;
+            font-size: 11px;
+            font-weight: 800;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        
+        .dropdown-divider {
+            height: 1px;
+            background: #f0f0f0;
+            margin: 4px 8px 8px;
+        }
+        
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: background 0.18s ease, transform 0.1s ease;
+            user-select: none;
+            position: relative;
+            opacity: 0;
+            transform: translateY(6px);
+            animation: itemAppear 0.3s ease forwards;
+        }
+        
+        @keyframes itemAppear {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .dropdown-item:hover { background: #f5f5f7; }
+        .dropdown-item:active { transform: scale(0.98); }
+        
+        .dropdown-item.is-active {
+            background: linear-gradient(135deg, #000 0%, #2a2a2a 100%);
+            color: #fff;
+        }
+        
+        .dropdown-item.is-active::before {
+            content: '';
+            position: absolute;
+            left: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 24px;
+            background: #fff;
+            border-radius: 2px;
+        }
+        
+        .dropdown-item .item-num {
+            font-weight: 800;
+            font-size: 18px;
+            min-width: 50px;
+            letter-spacing: -0.02em;
+        }
+        
+        .dropdown-item .item-label {
+            color: #555;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .dropdown-item.is-active .item-label {
+            color: rgba(255,255,255,0.75);
+        }
+        
+        .dropdown-empty {
+            padding: 24px 16px;
+            text-align: center;
+            color: #aaa;
+            font-size: 14px;
+        }
+        
+        .result-box { 
+            margin-top: 20px; 
+            padding: 20px; 
+            border-radius: 16px; 
+            display: none; 
+            line-height: 1.6; 
+            border: 1px solid transparent; 
+            animation: fadeIn 0.4s; 
+        }
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(10px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+        
+        .success { background: #f0fff4; color: #2f855a; border-color: #c6f6d5; }
+        .error { background: #fff5f5; color: #c53030; border-color: #feb2b2; }
+        .explanation { 
+            margin-top: 10px; 
+            font-size: 15px; 
+            border-top: 1px solid rgba(0,0,0,0.05); 
+            padding-top: 10px; 
+        }
+        
+        .limit-screen {
+            text-align: center;
+            padding: 20px;
+            max-width: 360px;
+        }
+        .limit-screen .icon { font-size: 56px; margin-bottom: 20px; }
+        .limit-screen .title {
+            font-weight: 800;
+            font-size: 22px;
+            margin-bottom: 12px;
+            color: #1a1a1a;
+        }
+        .limit-screen .subtitle {
+            color: #888;
+            font-size: 15px;
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+        .limit-screen .cta {
+            display: inline-block;
+            padding: 14px 28px;
+            background: #000;
+            color: #fff;
+            border-radius: 14px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 15px;
+            transition: transform 0.2s;
+        }
+        .limit-screen .cta:active { transform: scale(0.97); }
+        
+        @media (max-width: 480px) {
+            .app-container { padding: 20px; }
+            .btn-row { grid-template-columns: 1.5fr 1.5fr 1fr; gap: 8px; }
+            button { padding: 12px; font-size: 14px; }
+            .task-select-btn { font-size: 13px; padding: 12px 4px; }
+            .task-dropdown { min-width: 240px; }
+            .header { font-size: 17px; }
+            .progress-badge { font-size: 12px; padding: 6px 10px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="trainer-wrapper">
+    <div class="app-container">
+        <div id="loader">
+            <div class="spinner"></div>
+            <div style="font-weight: 600; color: #888;">Загрузка задачи...</div>
+        </div>
+
+        <div class="header">
+            <span>Задание <span id="task-num-display">№15</span></span>
+            <div class="progress-badge" id="progress-badge">
+                <span id="progress-text">0 / 5</span>
+                <span class="checkmark"><span id="score">0</span></span>
+            </div>
+        </div>
+        
+        <div class="image-zone"><svg id="svg-canvas" viewBox="0 0 400 220"></svg></div>
+        <div id="task-text" class="task-text"></div>
+        <input type="text" id="ans-input" placeholder="Введите ответ" autocomplete="off">
+        
+        <!-- ЛЕВАЯ: Новая задача | ЦЕНТР: Проверить | ПРАВАЯ: селектор -->
+        <div class="btn-row">
+            <button id="btn-gen" onclick="generateTask()">Новая задача</button>
+            <button id="btn-check" onclick="checkAnswer()">Проверить</button>
+            <div class="selector-wrapper">
+                <button class="task-select-btn" id="btn-selector" onclick="toggleDropdown(event)">
+                    <span id="btn-task-num">№15</span>
+                    <span class="arrow">▼</span>
+                </button>
+                <div id="task-dropdown" class="task-dropdown"></div>
+            </div>
+        </div>
+        
+        <div id="result" class="result-box"></div>
+    </div>
+</div>
+
+<script>
+// =========================================
+// КОНФИГ
+// =========================================
+const DAILY_LIMIT = 5;
+const AVAILABLE_TASKS = [15];
+const TASK_LABELS = {
+    15: 'Геометрия',
+    // 16: 'Углы окружности',
+};
+const TG_LINK = 'https://t.me/'; // ← поменяй на свой канал
+
+
+// =========================================
+// СОСТОЯНИЕ
+// =========================================
+let score = 0; 
+let current = null;
+let currentTaskNumber = null;
+
+
+// =========================================
+// ЛИМИТ ЗАДАЧ В ДЕНЬ
+// =========================================
+function getTodayKey() {
+    const d = new Date();
+    return `examflow_attempts_${d.getFullYear()}_${d.getMonth()}_${d.getDate()}`;
+}
+function getAttemptsToday() {
+    return parseInt(localStorage.getItem(getTodayKey()) || '0');
+}
+function incrementAttempts() {
+    const key = getTodayKey();
+    localStorage.setItem(key, getAttemptsToday() + 1);
+    updateProgressDisplay();
+}
+function isLimitReached() {
+    return getAttemptsToday() >= DAILY_LIMIT;
+}
+function updateProgressDisplay() {
+    const attempts = getAttemptsToday();
+    document.getElementById('progress-text').textContent = `${attempts} / ${DAILY_LIMIT}`;
+    const badge = document.getElementById('progress-badge');
+    if (attempts >= DAILY_LIMIT) badge.classList.add('limit-warning');
+    else badge.classList.remove('limit-warning');
+}
+function showLimitScreen() {
+    const loader = document.getElementById('loader');
+    loader.innerHTML = `
+        <div class="limit-screen">
+            <div class="icon">🎯</div>
+            <div class="title">Лимит на сегодня</div>
+            <div class="subtitle">
+                Ты решил 5 задач — это бесплатный дневной лимит.<br>
+                Возвращайся завтра за новой порцией.
+            </div>
+            <a href="${TG_LINK}" class="cta" target="_blank">Подписаться на канал</a>
+        </div>
+    `;
+    loader.style.display = 'flex';
+    loader.style.opacity = '1';
+    document.getElementById('btn-check').disabled = true;
+    document.getElementById('btn-gen').disabled = true;
+    document.getElementById('ans-input').disabled = true;
+}
+
+
+// =========================================
+// СЕЛЕКТОР ЗАДАЧ
+// =========================================
+function initDropdown() {
+    const dropdown = document.getElementById('task-dropdown');
+    dropdown.innerHTML = '';
+    
+    const title = document.createElement('div');
+    title.className = 'dropdown-title';
+    title.textContent = 'Выбери задание';
+    dropdown.appendChild(title);
+    
+    const divider = document.createElement('div');
+    divider.className = 'dropdown-divider';
+    dropdown.appendChild(divider);
+    
+    if (AVAILABLE_TASKS.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'dropdown-empty';
+        empty.textContent = 'Нет доступных заданий';
+        dropdown.appendChild(empty);
+        return;
+    }
+    
+    AVAILABLE_TASKS.forEach((num, idx) => {
+        const label = TASK_LABELS[num] || '';
+        const item = document.createElement('div');
+        item.className = 'dropdown-item';
+        item.dataset.taskNum = num;
+        item.style.animationDelay = `${idx * 0.04}s`;
+        item.innerHTML = `
+            <span class="item-num">№${num}</span>
+            <span class="item-label">${label}</span>
+        `;
+        item.onclick = (e) => {
+            e.stopPropagation();
+            selectTask(num);
+        };
+        dropdown.appendChild(item);
+    });
+}
+
+function toggleDropdown(event) {
+    if (event) event.stopPropagation();
+    const dropdown = document.getElementById('task-dropdown');
+    const btn = document.getElementById('btn-selector');
+    const isOpening = !dropdown.classList.contains('is-open');
+    dropdown.classList.toggle('is-open');
+    btn.classList.toggle('is-open');
+    if (isOpening) {
+        document.querySelectorAll('.dropdown-item').forEach((item, idx) => {
+            item.style.animation = 'none';
+            void item.offsetWidth;
+            item.style.animation = '';
+            item.style.animationDelay = `${idx * 0.04}s`;
+        });
+        updateActiveItem();
+    }
+}
+
+function closeDropdown() {
+    document.getElementById('task-dropdown').classList.remove('is-open');
+    document.getElementById('btn-selector').classList.remove('is-open');
+}
+
+function updateActiveItem() {
+    document.querySelectorAll('.dropdown-item').forEach(item => {
+        if (parseInt(item.dataset.taskNum) === currentTaskNumber) {
+            item.classList.add('is-active');
+        } else {
+            item.classList.remove('is-active');
+        }
+    });
+}
+
+function selectTask(num) {
+    closeDropdown();
+    document.getElementById('btn-task-num').textContent = `№${num}`;
+    document.getElementById('task-num-display').textContent = `№${num}`;
+    loadTaskNumber(num);
+}
+
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.selector-wrapper')) closeDropdown();
+});
+
+
+// =========================================
+// ЗАГРУЗКА ФАЙЛОВ ЗАДАЧ
+// =========================================
+function loadTaskNumber(num) {
+    currentTaskNumber = parseInt(num);
+    window.TASKS = [];
+    const oldScript = document.getElementById('current-task-script');
+    if (oldScript) oldScript.remove();
+    const script = document.createElement('script');
+    script.id = 'current-task-script';
+    script.src = `tasks/zadacha-${num}.js`;
+    script.onload = () => {
+        score = 0;
+        document.getElementById('score').innerText = score;
+        generateTask();
+    };
+    script.onerror = () => alert(`Файл tasks/zadacha-${num}.js не найден`);
+    document.head.appendChild(script);
+}
+
+
+// =========================================
+// ОТРИСОВКА SVG
+// =========================================
+function draw(drawFn) {
+    const svg = document.getElementById('svg-canvas'); 
+    svg.innerHTML = '';
+    const ns = "http://www.w3.org/2000/svg";
+    const L = (x1,y1,x2,y2, dash=false) => {
+        const l = document.createElementNS(ns, "line");
+        l.setAttribute("x1", x1); l.setAttribute("y1", y1);
+        l.setAttribute("x2", x2); l.setAttribute("y2", y2);
+        l.setAttribute("stroke", "#000"); l.setAttribute("stroke-width", "2");
+        if(dash) l.setAttribute("stroke-dasharray", "4"); 
+        svg.appendChild(l);
+    };
+    const T = (x,y,txt) => {
+        const t = document.createElementNS(ns, "text");
+        t.setAttribute("x", x); t.setAttribute("y", y);
+        t.setAttribute("font-size", "16"); 
+        t.setAttribute("font-weight", "bold");
+        t.textContent = txt; 
+        svg.appendChild(t);
+    };
+    drawFn(svg, L, T);
+}
+
+
+// =========================================
+// ГЕНЕРАЦИЯ ЗАДАЧИ
+// =========================================
+async function generateTask() {
+    if (isLimitReached()) {
+        showLimitScreen();
+        return;
+    }
+    
+    const loader = document.getElementById('loader');
+    const btnCheck = document.getElementById('btn-check');
+    const input = document.getElementById('ans-input');
+    const res = document.getElementById('result');
+
+    loader.innerHTML = `
+        <div class="spinner"></div>
+        <div style="font-weight: 600; color: #888;">Загрузка задачи...</div>
+    `;
+    loader.style.display = 'flex';
+    loader.style.opacity = '1';
+    res.style.display = 'none';
+    input.disabled = false;
+    input.value = '';
+
+    const delay = Math.floor(Math.random() * 500) + 1500;
+    await new Promise(resolve => setTimeout(resolve, delay));
+
+    const taskType = window.TASKS[Math.floor(Math.random() * window.TASKS.length)];
+    current = taskType.engine();
+    current._drawFn = taskType.draw;
+    
+    document.getElementById('task-text').innerText = current.txt;
+    draw(current._drawFn);
+
+    loader.style.opacity = '0';
+    setTimeout(() => { loader.style.display = 'none'; }, 300);
+    btnCheck.disabled = false;
+}
+
+
+// =========================================
+// ПРОВЕРКА ОТВЕТА
+// =========================================
+function checkAnswer() {
+    const input = document.getElementById('ans-input');
+    const btnCheck = document.getElementById('btn-check');
+    const val = input.value.trim().replace(',','.');
+    const res = document.getElementById('result');
+    
+    if (val === "") return;
+
+    res.style.display = 'block';
+    btnCheck.disabled = true;
+    input.disabled = true;
+    incrementAttempts();
+
+    if(parseFloat(val) === current.ans) {
+        res.className = 'result-box success'; 
+        res.innerHTML = `<b>Верно!</b>`;
+        score++; 
+        document.getElementById('score').innerText = score;
+    } else {
+        res.className = 'result-box error'; 
+        res.innerHTML = `<b>Ошибка.</b><div class="explanation"><b>Решение:</b><br>${current.solve}</div>`;
+    }
+}
+
+
+// =========================================
+// СТАРТ
+// =========================================
+window.onload = () => {
+    initDropdown();
+    updateProgressDisplay();
+    const urlParams = new URLSearchParams(window.location.search);
+    const startTask = urlParams.get('task') || AVAILABLE_TASKS[0];
+    document.getElementById('btn-task-num').textContent = `№${startTask}`;
+    document.getElementById('task-num-display').textContent = `№${startTask}`;
+    loadTaskNumber(startTask);
+};
+</script>
+</body>
+</html>
+// это базовый шаблон тренажера для ОГЭ по математике, который позволяет пользователю решать задачи, отслеживать прогресс и управлять выбором заданий:)
+// привет
